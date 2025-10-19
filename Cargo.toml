@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "artinchip-rt",
     "artinchip-hal",
+    "artinchip-rt",
+    "examples/pbp/pbp-hello-world",
 ]
 resolver = "3"
