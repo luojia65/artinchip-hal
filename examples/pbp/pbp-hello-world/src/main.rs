@@ -1,12 +1,46 @@
 #![no_std]
 #![no_main]
 
+use artinchip_hal::{cmu, gpio};
 use core::arch::naked_asm;
 use panic_halt as _;
 
-extern "C" fn pbp_main(boot_param: u32, priv_addr: *const (), priv_len: u32) {
-    let uart = unsafe { &*(0x18710000 as *const uart16550::Uart16550<u32>) };
-    uart.write(b"Hello World from Rust Artinchip HAL!\n");
+extern "C" fn pbp_main(_boot_param: u32, _priv_addr: *const (), _priv_len: u32) {
+    let cmu = unsafe { &*(0x18020000 as *const cmu::RegisterBlock) };
+    unsafe {
+        // 1.2GHz / (24 + 1) = 48MHz
+        cmu.clock_uart0
+            .modify(|v| v.enable_module_clk().set_module_clk_div(24))
+    };
+
+    let gpio = unsafe { &*(0x18700000 as *const gpio::RegisterBlock) };
+    let gpioa = &gpio.groups[0];
+    unsafe {
+        // pa0 = 0x325
+        gpioa.pin_config[0].modify(|v| {
+            v.set_pin_pull(gpio::PinPull::PullUp)
+                .set_drive_strength(gpio::PinDriveStrength::Level2)
+                .set_pin_func(5)
+        });
+        // pa1 = 0x325
+        gpioa.pin_config[1].modify(|v| {
+            v.set_pin_pull(gpio::PinPull::PullUp)
+                .set_drive_strength(gpio::PinDriveStrength::Level2)
+                .set_pin_func(5)
+        });
+    }
+
+    let uart0 = unsafe { &*(0x18710000 as *const uart16550::Uart16550<u32>) };
+    // 48MHz / 417 ≈ 115200 Bd * (1 - 0.08%)
+    uart0.write_divisor(417);
+    // 115200 8N1
+    let lcr = uart0.lcr().read();
+    uart0.lcr().write(
+        lcr.set_char_len(uart16550::CharLen::EIGHT)
+            .set_one_stop_bit(true)
+            .set_parity(uart16550::PARITY::NONE),
+    );
+    uart0.write(b"Hello World from Rust Artinchip HAL!\n");
 }
 
 #[unsafe(naked)]

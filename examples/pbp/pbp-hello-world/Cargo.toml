@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 panic-halt = "1.0.0"
 uart16550 = "*"
+artinchip-hal = { version = "0.0.0", path = "../../../artinchip-hal" }
