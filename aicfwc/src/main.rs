@@ -64,15 +64,8 @@ fn build_pbp(bin: &[u8]) -> Result<Vec<u8>> {
     }
 
     // 2. 先拼一个占位的PBP: magic + checksum占位 + 数据
-    let total_len = 8 + aligned.len();
+    let total_len = aligned.len();
     let mut out = Vec::with_capacity(total_len);
-
-    // magic
-    const MAGIC: &[u8; 4] = b"PBP ";
-    out.extend_from_slice(MAGIC);
-
-    // checksum占位(先放0)
-    out.extend_from_slice(&[0u8; 4]);
 
     // 数据
     out.extend_from_slice(&aligned);
