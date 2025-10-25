@@ -1,0 +1,9 @@
+[package]
+name = "aicfwc"
+description = "Artinchip firmware command-line tools"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
