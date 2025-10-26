@@ -281,6 +281,12 @@ impl PinConfig {
     const PIN_DRV: u32 = 0x7 << 4;
     const PIN_FUN: u32 = 0xF;
 
+    /// Create a zero-default `PinConfig`.
+    #[inline]
+    pub const fn zeroed() -> Self {
+        Self(0)
+    }
+
     /// Set debounce reference point for input stage 1 (`GEN_IN_DB1_POINT`).
     ///
     /// Only effective when `PIN_FUN` = 1 and `GEN_IE` = 1.

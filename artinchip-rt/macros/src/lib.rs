@@ -3,7 +3,7 @@
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    parse, parse_macro_input, spanned::Spanned, FnArg, ItemFn, ReturnType, Type, Visibility,
+    FnArg, ItemFn, ReturnType, Type, Visibility, parse, parse_macro_input, spanned::Spanned,
 };
 
 use proc_macro::TokenStream;
@@ -11,7 +11,7 @@ use proc_macro::TokenStream;
 /// Pre-Boot Program (PBP) entry.
 ///
 /// In Rust, PBP entry function should follow this convention listed below:
-/// 
+///
 /// ```rust
 /// #[pbp_entry]
 /// [unsafe] fn pbp_main(boot_param: u32, private_data: &[u8])
@@ -35,34 +35,48 @@ pub fn pbp_entry(args: TokenStream, input: TokenStream) -> TokenStream {
 
     match arg0_boot_param {
         FnArg::Receiver(_) => {
-            return parse::Error::new(arg0_boot_param.span(), "artinchip-rt-macros: invalid argument")
-                .to_compile_error()
-                .into();
+            return parse::Error::new(
+                arg0_boot_param.span(),
+                "artinchip-rt-macros: invalid argument",
+            )
+            .to_compile_error()
+            .into();
         }
         FnArg::Typed(t) => {
             if let Type::Path(_p) = &*t.ty {
                 // empty
             } else {
-                return parse::Error::new(t.ty.span(), "artinchip-rt-macros: argument type must be a path")
-                    .to_compile_error()
-                    .into();
+                return parse::Error::new(
+                    t.ty.span(),
+                    "artinchip-rt-macros: argument type must be a path",
+                )
+                .to_compile_error()
+                .into();
             }
         }
     }
 
     match arg1_private_data {
         FnArg::Receiver(_) => {
-            return parse::Error::new(arg1_private_data.span(), "artinchip-rt-macros: invalid argument")
-                .to_compile_error()
-                .into();
+            return parse::Error::new(
+                arg1_private_data.span(),
+                "artinchip-rt-macros: invalid argument",
+            )
+            .to_compile_error()
+            .into();
         }
         FnArg::Typed(t) => {
-            if let Type::Reference(p) = &*t.ty && let Type::Slice(_s) = &*p.elem {
+            if let Type::Reference(p) = &*t.ty
+                && let Type::Slice(_s) = &*p.elem
+            {
                 // empty
             } else {
-                return parse::Error::new(t.ty.span(), "artinchip-rt-macros: argument type must be a reference to a slice")
-                    .to_compile_error()
-                    .into();
+                return parse::Error::new(
+                    t.ty.span(),
+                    "artinchip-rt-macros: argument type must be a reference to a slice",
+                )
+                .to_compile_error()
+                .into();
             }
         }
     }
