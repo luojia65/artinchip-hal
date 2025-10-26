@@ -6,7 +6,7 @@ use core::arch::naked_asm;
 #[repr(C)]
 pub struct PbpHeader {
     /// Magic number, should be ASCII "PBP ".
-    pub magic: u32,
+    pub magic: [u8; 4],
     /// PBP checksum.
     pub checksum: u32,
 }
@@ -15,7 +15,7 @@ pub struct PbpHeader {
 #[unsafe(link_section = ".head.pbp")]
 #[used]
 pub static PBP_HEADER: PbpHeader = PbpHeader {
-    magic: 0x20504250,
+    magic: *b"PBP ",
     checksum: 0x0, // <- Real checksum filled by PBP tools.
 };
 
@@ -29,6 +29,7 @@ pub extern "C" fn _start() {
     static mut STACK: [u8; STACK_SIZE] = [0u8; STACK_SIZE];
 
     naked_asm!(
+        // Clear `.bss` section
         "   la      t0, sbss
             la      t1, ebss
         1:  bgeu    t0, t1, 2f
@@ -36,8 +37,13 @@ pub extern "C" fn _start() {
             addi    t0, t0, 4
             j       1b",
         "2:",
+        // Prepare programming language stack
         "   la      sp, {stack} + {stack_size}",
+        // Start Rust main function
         "   j       {main}",
+        // Platform halt if main function returns
+        "3: wfi
+        j       3b",
         stack_size = const STACK_SIZE,
         stack      =   sym STACK,
         main       =   sym pbp_main,
@@ -45,5 +51,5 @@ pub extern "C" fn _start() {
 }
 
 unsafe extern "C" {
-    fn pbp_main(boot_param: u32, priv_addr: *const (), priv_len: u32);
+    fn pbp_main(boot_param: u32, priv_addr: *const u8, priv_len: u32);
 }

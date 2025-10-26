@@ -2,11 +2,11 @@
 #![no_main]
 
 use artinchip_hal::gpio::{self, OutputClear, OutputSet};
-use artinchip_rt as _;
+use artinchip_rt::pbp_entry;
 use panic_halt as _;
 
-#[unsafe(export_name = "pbp_main")]
-extern "C" fn pbp_main(_boot_param: u32, _priv_addr: *const (), _priv_len: u32) {
+#[pbp_entry]
+fn pbp_main(_boot_param: u32, _private_data: &[u8]) {
     let gpio = unsafe { &*(0x18700000 as *const gpio::RegisterBlock) };
     let gpioa = &gpio.groups[0];
     unsafe {

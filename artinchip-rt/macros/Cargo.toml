@@ -1,0 +1,18 @@
+[package]
+name = "artinchip-rt-macros"
+version = "0.0.0"
+edition = "2024"
+authors = [
+    "Zhouqi Jiang <luojia@openatom.club>",
+]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+proc-macro2 = "1.0"
+
+[dependencies.syn]
+version = "1.0"
+features = ["extra-traits", "full"]
