@@ -2,7 +2,6 @@
 
 use super::blocking::BlockingSerial;
 use super::config::UartConfig;
-use super::pad::UartPad;
 use super::pad::{Receive, Transmit};
 use crate::cmu::Cmu;
 
@@ -16,6 +15,6 @@ pub trait UartExt<'a, const I: u8> {
         cmu: &mut Cmu,
     ) -> BlockingSerial<'a, I, TX, RX>
     where
-        TX: UartPad<I> + Transmit<I>,
-        RX: UartPad<I> + Receive<I>;
+        TX: Transmit<I>,
+        RX: Receive<I>;
 }

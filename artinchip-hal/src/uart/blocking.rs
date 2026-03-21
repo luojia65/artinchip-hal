@@ -2,17 +2,13 @@
 
 use super::config::{StopBits, UartConfig};
 use super::instance::Uart;
-use super::pad::{Receive, Transmit, UartPad};
+use super::pad::{Receive, Transmit};
 use super::register::RegisterBlock;
 use crate::cmu::Cmu;
 use uart16550::TriggerLevel;
 
 /// Blocking serial communication interface.
-pub struct BlockingSerial<'a, const I: u8, TX, RX>
-where
-    TX: UartPad<I> + Transmit<I>,
-    RX: UartPad<I> + Receive<I>,
-{
+pub struct BlockingSerial<'a, const I: u8, TX, RX> {
     reg: &'a RegisterBlock,
     tx: TX,
     rx: RX,
@@ -20,8 +16,8 @@ where
 
 impl<'a, const I: u8, TX, RX> BlockingSerial<'a, I, TX, RX>
 where
-    TX: UartPad<I> + Transmit<I>,
-    RX: UartPad<I> + Receive<I>,
+    TX: Transmit<I>,
+    RX: Receive<I>,
 {
     /// Create a new blocking serial.
     pub fn new(reg: &'a RegisterBlock, tx: TX, rx: RX, config: UartConfig, cmu: &mut Cmu) -> Self {
@@ -158,7 +154,7 @@ where
 /// Transmit half of the serial interface.
 pub struct TransmitHalf<'a, const I: u8, TX>
 where
-    TX: UartPad<I> + Transmit<I>,
+    TX: Transmit<I>,
 {
     reg: &'a RegisterBlock,
     _pad: TX,
@@ -166,7 +162,7 @@ where
 
 impl<'a, const I: u8, TX> TransmitHalf<'a, I, TX>
 where
-    TX: UartPad<I> + Transmit<I>,
+    TX: Transmit<I>,
 {
     /// Blocking write buffer.
     pub fn blocking_write(&mut self, buf: &[u8]) -> Result<usize, ()> {
@@ -186,7 +182,7 @@ where
 /// Receive half of the serial interface.
 pub struct ReceiveHalf<'a, const I: u8, RX>
 where
-    RX: UartPad<I> + Receive<I>,
+    RX: Receive<I>,
 {
     _reg: &'a RegisterBlock,
     _pad: RX,
@@ -194,7 +190,7 @@ where
 
 impl<'a, const I: u8, RX> ReceiveHalf<'a, I, RX>
 where
-    RX: UartPad<I> + Receive<I>,
+    RX: Receive<I>,
 {
     /// Blocking read buffer.
     pub fn blocking_read(&mut self, buf: &mut [u8]) -> Result<usize, ()> {
@@ -206,30 +202,30 @@ where
 
 impl<'a, const I: u8, TX, RX> embedded_io::ErrorType for BlockingSerial<'a, I, TX, RX>
 where
-    TX: UartPad<I> + Transmit<I>,
-    RX: UartPad<I> + Receive<I>,
+    TX: Transmit<I>,
+    RX: Receive<I>,
 {
     type Error = core::convert::Infallible;
 }
 
 impl<'a, const I: u8, TX> embedded_io::ErrorType for TransmitHalf<'a, I, TX>
 where
-    TX: UartPad<I> + Transmit<I>,
+    TX: Transmit<I>,
 {
     type Error = core::convert::Infallible;
 }
 
 impl<'a, const I: u8, RX> embedded_io::ErrorType for ReceiveHalf<'a, I, RX>
 where
-    RX: UartPad<I> + Receive<I>,
+    RX: Receive<I>,
 {
     type Error = core::convert::Infallible;
 }
 
 impl<'a, const I: u8, TX, RX> embedded_io::Write for BlockingSerial<'a, I, TX, RX>
 where
-    TX: UartPad<I> + Transmit<I>,
-    RX: UartPad<I> + Receive<I>,
+    TX: Transmit<I>,
+    RX: Receive<I>,
 {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
@@ -247,7 +243,7 @@ where
 
 impl<'a, const I: u8, TX> embedded_io::Write for TransmitHalf<'a, I, TX>
 where
-    TX: UartPad<I> + Transmit<I>,
+    TX: Transmit<I>,
 {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
@@ -265,8 +261,8 @@ where
 
 impl<'a, const I: u8, TX, RX> embedded_io::Read for BlockingSerial<'a, I, TX, RX>
 where
-    TX: UartPad<I> + Transmit<I>,
-    RX: UartPad<I> + Receive<I>,
+    TX: Transmit<I>,
+    RX: Receive<I>,
 {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
@@ -277,7 +273,7 @@ where
 
 impl<'a, const I: u8, RX> embedded_io::Read for ReceiveHalf<'a, I, RX>
 where
-    RX: UartPad<I> + Receive<I>,
+    RX: Receive<I>,
 {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {

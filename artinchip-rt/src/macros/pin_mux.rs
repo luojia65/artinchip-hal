@@ -28,12 +28,11 @@ macro_rules! gpio {
 
 // UART pin multiplexer macros.
 
-/// Implements the `Transmit` and `UartPad` traits for multiple UART pins.
+/// Implements the `Transmit` traits for multiple UART pins.
 #[allow(unused_macros)]
 macro_rules! uart_tx {
     ($uart_num:expr, $(($port:literal, $pin:expr, $func:expr)),+) => {
         $(
-            impl artinchip_hal::uart::UartPad<$uart_num> for crate::gpio::Function<'_, $port, $pin, $func> {}
             impl artinchip_hal::uart::Transmit<$uart_num> for crate::gpio::Function<'_, $port, $pin, $func> {}
 
             paste! {
@@ -48,12 +47,11 @@ macro_rules! uart_tx {
     };
 }
 
-/// Implements the `Receive` and `UartPad` traits for multiple UART pins.
+/// Implements the `Receive` traits for multiple UART pins.
 #[allow(unused_macros)]
 macro_rules! uart_rx {
     ($uart_num:expr, $(($port:literal, $pin:expr, $func:expr)),+) => {
         $(
-            impl artinchip_hal::uart::UartPad<$uart_num> for crate::gpio::Function<'_, $port, $pin, $func> {}
             impl artinchip_hal::uart::Receive<$uart_num> for crate::gpio::Function<'_, $port, $pin, $func> {}
 
             paste! {
