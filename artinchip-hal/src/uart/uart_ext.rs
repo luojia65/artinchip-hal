@@ -2,19 +2,15 @@
 
 use super::blocking::BlockingSerial;
 use super::config::UartConfig;
-use super::pad::{IntoReceive, IntoTransmit, Receive, Transmit};
+use super::pad::IntoUartPads;
 use crate::cmu::Cmu;
 
 pub trait UartExt<'a, const I: u8> {
     /// Greats a blocking UART interface with the specified pads.
-    fn new_blocking<TX, RX>(
+    fn new_blocking<PADS>(
         self,
-        tx: impl IntoTransmit<'static, I, TX>,
-        rx: impl IntoReceive<'static, I, RX>,
+        pads: impl IntoUartPads<'static, I, PADS>,
         config: UartConfig,
         cmu: &mut Cmu,
-    ) -> BlockingSerial<'a, I, (TX, RX)>
-    where
-        TX: Transmit<I>,
-        RX: Receive<I>;
+    ) -> BlockingSerial<'static, I, PADS>;
 }

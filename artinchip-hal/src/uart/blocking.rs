@@ -5,7 +5,7 @@ use super::instance::Uart;
 use super::pad::{Receive, Transmit};
 use super::register::RegisterBlock;
 use crate::cmu::Cmu;
-use crate::uart::{IntoReceive, IntoTransmit, UartPads};
+use crate::uart::{IntoUartPads, UartPads};
 use uart16550::TriggerLevel;
 
 /// Blocking serial communication interface.
@@ -14,26 +14,16 @@ pub struct BlockingSerial<'a, const I: u8, PADS> {
     pads: PADS,
 }
 
-impl<'a, const I: u8, TX, RX> BlockingSerial<'a, I, (TX, RX)>
-where
-    TX: Transmit<I>,
-    RX: Receive<I>,
-{
+impl<'a, const I: u8, PADS> BlockingSerial<'a, I, PADS> {
     /// Create a new blocking serial.
-    pub fn new<T, R>(
+    pub fn new(
         reg: &'a RegisterBlock,
-        tx: T,
-        rx: R,
+        pads: impl IntoUartPads<'a, I, PADS>,
         config: UartConfig,
         cmu: &mut Cmu,
-    ) -> Self
-    where
-        T: IntoTransmit<'a, I, TX>,
-        R: IntoReceive<'a, I, RX>,
-    {
+    ) -> Self {
         // Configure GPIO pad modes.
-        let tx = tx.into_uart_transmit();
-        let rx = rx.into_uart_receive();
+        let pads = pads.into_uart_pads();
         // Enable clocks for the UART instance
         // TODO: flexible clock frequency handling
         let fix_mod_clk_rate = 48_000_000;
@@ -102,12 +92,36 @@ where
         // Enable FIFO and set trigger levels
         uart16550.iir_fcr().write(TriggerLevel::_14.and_reset());
 
-        Self {
-            reg,
-            pads: (tx, rx),
-        }
+        Self { reg, pads }
     }
 
+    /// Blocking write buffer.
+    pub fn blocking_write(&mut self, buf: &[u8]) -> Result<usize, ()> {
+        let uart16550 = &self.reg.uart16550;
+
+        for &b in buf {
+            // Wait until the transmitter FIFO is not full
+            while !uart16550.lsr().read().is_transmitter_fifo_empty() {
+                core::hint::spin_loop();
+            }
+            uart16550.rbr_thr().tx_data(b);
+        }
+        Ok(buf.len())
+    }
+
+    /// Blocking read buffer.
+    pub fn blocking_read(&mut self, buf: &mut [u8]) -> Result<usize, ()> {
+        // TODO: implement reading into buffer
+        buf.fill(0);
+        Ok(0)
+    }
+}
+
+impl<'a, const I: u8, TX, RX> BlockingSerial<'a, I, (TX, RX)>
+where
+    TX: Transmit<I>,
+    RX: Receive<I>,
+{
     /// Statically split into transmit and receive halves.
     pub fn split(self) -> (TransmitHalf<'a, I, TX>, ReceiveHalf<'a, I, RX>) {
         (
@@ -143,32 +157,6 @@ where
             });
         }
         (Uart::__new(self.reg), self.pads.0, self.pads.1)
-    }
-}
-
-impl<'a, const I: u8, PADS> BlockingSerial<'a, I, PADS>
-where
-    PADS: UartPads<I>,
-{
-    /// Blocking write buffer.
-    pub fn blocking_write(&mut self, buf: &[u8]) -> Result<usize, ()> {
-        let uart16550 = &self.reg.uart16550;
-
-        for &b in buf {
-            // Wait until the transmitter FIFO is not full
-            while !uart16550.lsr().read().is_transmitter_fifo_empty() {
-                core::hint::spin_loop();
-            }
-            uart16550.rbr_thr().tx_data(b);
-        }
-        Ok(buf.len())
-    }
-
-    /// Blocking read buffer.
-    pub fn blocking_read(&mut self, buf: &mut [u8]) -> Result<usize, ()> {
-        // TODO: implement reading into buffer
-        buf.fill(0);
-        Ok(0)
     }
 }
 

@@ -2,7 +2,7 @@
 
 use super::blocking::BlockingSerial;
 use super::config::UartConfig;
-use super::pad::{IntoReceive, IntoTransmit, Receive, Transmit};
+use super::pad::IntoUartPads;
 use super::register::RegisterBlock;
 use super::uart_ext::UartExt;
 use crate::cmu::Cmu;
@@ -31,17 +31,12 @@ impl<const I: u8> Uart<I> {
 
 impl<const I: u8> UartExt<'static, I> for Uart<I> {
     #[inline]
-    fn new_blocking<TX, RX>(
+    fn new_blocking<PADS>(
         self,
-        tx: impl IntoTransmit<'static, I, TX>,
-        rx: impl IntoReceive<'static, I, RX>,
+        pads: impl IntoUartPads<'static, I, PADS>,
         config: UartConfig,
         cmu: &mut Cmu,
-    ) -> BlockingSerial<'static, I, (TX, RX)>
-    where
-        TX: Transmit<I>,
-        RX: Receive<I>,
-    {
-        BlockingSerial::new(self.register_block(), tx, rx, config, cmu)
+    ) -> BlockingSerial<'static, I, PADS> {
+        BlockingSerial::new(self.register_block(), pads, config, cmu)
     }
 }

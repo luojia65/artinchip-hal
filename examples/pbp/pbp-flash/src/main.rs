@@ -16,10 +16,10 @@ use w25qxxxjv::{Model, SpiSpeed, W25QXXXJV};
 fn pbp_main(_boot_param: u32, _private_data: &[u8]) {
     let mut p = Peripherals::take();
 
-    let (tx, rx) = (p.gpioa.pa0, p.gpioa.pa1);
+    let pads = (p.gpioa.pa0, p.gpioa.pa1);
     let mut uart0 = p
         .uart0
-        .new_blocking(tx, rx, UartConfig::default(), &mut p.cmu);
+        .new_blocking(pads, UartConfig::default(), &mut p.cmu);
 
     let mut led = p.gpioa.pa5.into_pull_up_output();
     let mut delay = p.gtc.new_timer_delay(CntFreq::Freq4M, &mut p.cmu);
