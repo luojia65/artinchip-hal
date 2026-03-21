@@ -37,7 +37,7 @@ impl<const I: u8> UartExt<'static, I> for Uart<I> {
         rx: impl IntoReceive<'static, I, RX>,
         config: UartConfig,
         cmu: &mut Cmu,
-    ) -> BlockingSerial<'static, I, TX, RX>
+    ) -> BlockingSerial<'static, I, (TX, RX)>
     where
         TX: Transmit<I>,
         RX: Receive<I>,

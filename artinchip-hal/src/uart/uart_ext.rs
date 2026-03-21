@@ -13,7 +13,7 @@ pub trait UartExt<'a, const I: u8> {
         rx: impl IntoReceive<'static, I, RX>,
         config: UartConfig,
         cmu: &mut Cmu,
-    ) -> BlockingSerial<'a, I, TX, RX>
+    ) -> BlockingSerial<'a, I, (TX, RX)>
     where
         TX: Transmit<I>,
         RX: Receive<I>;
