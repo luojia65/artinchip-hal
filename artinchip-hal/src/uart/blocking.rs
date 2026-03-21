@@ -5,6 +5,7 @@ use super::instance::Uart;
 use super::pad::{Receive, Transmit};
 use super::register::RegisterBlock;
 use crate::cmu::Cmu;
+use crate::uart::{IntoReceive, IntoTransmit};
 use uart16550::TriggerLevel;
 
 /// Blocking serial communication interface.
@@ -20,7 +21,20 @@ where
     RX: Receive<I>,
 {
     /// Create a new blocking serial.
-    pub fn new(reg: &'a RegisterBlock, tx: TX, rx: RX, config: UartConfig, cmu: &mut Cmu) -> Self {
+    pub fn new<T, R>(
+        reg: &'a RegisterBlock,
+        tx: T,
+        rx: R,
+        config: UartConfig,
+        cmu: &mut Cmu,
+    ) -> Self
+    where
+        T: IntoTransmit<'a, I, TX>,
+        R: IntoReceive<'a, I, RX>,
+    {
+        // Configure GPIO pad modes.
+        let tx = tx.into_uart_transmit();
+        let rx = rx.into_uart_receive();
         // Enable clocks for the UART instance
         // TODO: flexible clock frequency handling
         let fix_mod_clk_rate = 48_000_000;

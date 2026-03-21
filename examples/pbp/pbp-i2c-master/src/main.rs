@@ -13,8 +13,8 @@ use panic_halt as _;
 #[pbp_entry]
 fn pbp_main(_boot_param: u32, _private_data: &[u8]) {
     let mut p = Peripherals::take();
-    let tx = p.gpioa.pa0.into_uart0_tx();
-    let rx = p.gpioa.pa1.into_uart0_rx();
+    let tx = p.gpioa.pa0;
+    let rx = p.gpioa.pa1;
     let scl = p.gpioa.pa8.into_i2c2_scl();
     let sda = p.gpioa.pa9.into_i2c2_sda();
 

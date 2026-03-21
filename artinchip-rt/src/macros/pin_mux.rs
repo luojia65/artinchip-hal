@@ -34,6 +34,16 @@ macro_rules! uart_tx {
     ($uart_num:expr, $(($port:literal, $pin:expr, $func:expr)),+) => {
         $(
             impl artinchip_hal::uart::Transmit<$uart_num> for crate::gpio::Function<'_, $port, $pin, $func> {}
+            impl<'a> artinchip_hal::uart::IntoTransmit<'a, $uart_num, crate::gpio::Function<'a, $port, $pin, $func>> for crate::gpio::Function<'a, $port, $pin, $func> {
+                #[inline] fn into_uart_transmit(self) -> Self {
+                    self
+                }
+            }
+            impl<'a> artinchip_hal::uart::IntoTransmit<'a, $uart_num, crate::gpio::Function<'a, $port, $pin, $func>> for crate::gpio::GpioPad<$port, $pin> {
+                #[inline] fn into_uart_transmit(self) -> crate::gpio::Function<'a, $port, $pin, $func> {
+                    self.into_function::<$func>()
+                }
+            }
 
             paste! {
                 impl<'a> crate::gpio::GpioPad<$port, $pin> {
@@ -53,6 +63,16 @@ macro_rules! uart_rx {
     ($uart_num:expr, $(($port:literal, $pin:expr, $func:expr)),+) => {
         $(
             impl artinchip_hal::uart::Receive<$uart_num> for crate::gpio::Function<'_, $port, $pin, $func> {}
+            impl<'a> artinchip_hal::uart::IntoReceive<'a, $uart_num, crate::gpio::Function<'a, $port, $pin, $func>> for crate::gpio::Function<'a, $port, $pin, $func> {
+                #[inline] fn into_uart_receive(self) -> Self {
+                    self
+                }
+            }
+            impl<'a> artinchip_hal::uart::IntoReceive<'a, $uart_num, crate::gpio::Function<'a, $port, $pin, $func>> for crate::gpio::GpioPad<$port, $pin> {
+                #[inline] fn into_uart_receive(self) -> crate::gpio::Function<'a, $port, $pin, $func> {
+                    self.into_function::<$func>()
+                }
+            }
 
             paste! {
                 impl<'a> crate::gpio::GpioPad<$port, $pin> {
