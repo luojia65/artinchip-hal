@@ -6,7 +6,7 @@ use artinchip_hal::gtc::CntFreq;
 use artinchip_hal::prelude::*;
 use artinchip_hal::uart::*;
 use artinchip_rt::prelude::*;
-use artinchip_rt::{Peripherals, core::cache::*, pbp_entry};
+use artinchip_rt::{Peripherals, pbp_entry};
 use embedded_io::Write;
 use panic_halt as _;
 
@@ -17,7 +17,8 @@ static mut MEM_SRC: MemBuf = MemBuf([0u32; 2000]);
 static mut MEM_DST: MemBuf = MemBuf([0xDEAD_BEEFu32; 2000]);
 
 #[pbp_entry]
-fn pbp_main(_boot_param: u32, _private_data: &[u8]) {
+fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
+    check_startup(&boot_param);
     let mut p = Peripherals::take();
 
     let tx = p.gpioa.pa0.into_uart0_tx();

@@ -19,6 +19,18 @@ pub(crate) extern "C" fn _enable_cache() {
     }
 }
 
+/// Disable I-Cache and D-Cache.
+///
+/// # Safety
+/// Caller must ensure that no code will be executed from I-cache after this call.
+#[unsafe(no_mangle)]
+pub(crate) extern "C" fn _disable_cache() {
+    unsafe {
+        mhcr::clear_ie();
+        mhcr::clear_de();
+    }
+}
+
 #[cfg(any(
     feature = "d12x",
     feature = "d13x",

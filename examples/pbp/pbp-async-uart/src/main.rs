@@ -5,7 +5,7 @@
 use artinchip_hal::clic_bind_interrupts;
 use artinchip_hal::prelude::*;
 use artinchip_hal::uart::*;
-use artinchip_rt::{Peripherals, pbp_entry};
+use artinchip_rt::{Peripherals, pbp_entry, prelude::*};
 use core::fmt::Write as _;
 use embassy_futures::block_on;
 use embedded_io_async::Read as _;
@@ -41,7 +41,8 @@ werde ich wach und singe ein Lied
 das Vergissmeinnicht, das du mir gegeben hast, ist hier"#;
 
 #[pbp_entry]
-fn pbp_main(_boot_param: u32, _private_data: &[u8]) {
+fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
+    check_startup(&boot_param);
     let mut p = Peripherals::take();
 
     let uart0_tx = p.gpioa.pa0.into_uart0_tx();
