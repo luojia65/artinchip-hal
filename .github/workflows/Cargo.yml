@@ -58,7 +58,7 @@ jobs:
       - name: Install cargo-tarpaulin
         run: cargo install cargo-tarpaulin
       - name: Generate code coverage
-        run: cargo tarpaulin --engine llvm -p artinchip-hal --features "d13x clic_interrupts" --out Html --output-dir ./coverage-report
+        run: cargo tarpaulin --engine llvm -p artinchip-hal --features "d13x clic-interrupts" --out Html --output-dir ./coverage-report
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -75,7 +75,7 @@ jobs:
         # Bind each package to its specific interrupt feature
         PACKAGE: 
           - name: artinchip-hal
-            int_feat: clic_interrupts
+            int_feat: clic-interrupts
           - name: artinchip-rt
             int_feat: interrupts
         CHIP_FEATURE: [d12x, d13x, d21x, g73x, m6800]

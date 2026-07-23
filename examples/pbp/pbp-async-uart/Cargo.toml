@@ -16,6 +16,6 @@ artinchip-hal = { version = "0.0.0", path = "../../../artinchip-hal" }
 artinchip-rt = { version = "0.0.0", path = "../../../artinchip-rt" }
 
 [features]
-default = ["d13x", "artinchip-rt/interrupts", "artinchip-hal/clic_interrupts"]
+default = ["d13x", "artinchip-rt/interrupts", "artinchip-hal/clic-interrupts"]
 d13x = ["artinchip-rt/d13x", "artinchip-hal/d13x"]
 # TODO other features for all the chips.
