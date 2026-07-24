@@ -6,7 +6,7 @@ use artinchip_hal::prelude::*;
 use artinchip_hal::uart::*;
 use artinchip_hal::wdog::RegWrMode;
 use artinchip_rt::{Peripherals, pbp_entry, prelude::*};
-use embedded_io::Write;
+use log::info;
 use panic_halt as _;
 
 #[pbp_entry]
@@ -16,9 +16,7 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
     let tx = p.gpioa.pa0.into_uart0_tx();
     let rx = p.gpioa.pa1.into_uart0_rx();
 
-    let mut uart0 = p
-        .uart0
-        .new_blocking(tx, rx, UartConfig::default(), &mut p.cmu);
+    let _uart0 = uart_logger_init(p.uart0, tx, rx, UartConfig::default(), &mut p.cmu).unwrap();
     let mut delay = p.gtc.new_timer_delay(CntFreq::Freq4M, &mut p.cmu);
 
     let reset_info = p.wri.new_reset_info();
@@ -30,22 +28,18 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
     wdog.set_wr_mode(RegWrMode::WriteProtect);
     wdog.op_cfg_sw(0);
 
-    writeln!(
-        uart0,
-        "Welcome to pbp boot info example by artinchip-hal🦀!"
-    )
-    .ok();
+    info!("Welcome to pbp boot info example by artinchip-hal🦀!");
 
-    writeln!(uart0, "Reset reason: {:?}", reset_info.reason(),).ok();
-    writeln!(uart0, "Watchdog active channel: {}", wdog.channel_id()).ok();
-    writeln!(uart0, "Watchdog write mode: {:?}", wdog.wr_mode()).ok();
-    writeln!(uart0, "Watchdog thresholds:").ok();
-    writeln!(uart0, "  Clear threshold: {}", wdog.thd(0).0).ok();
-    writeln!(uart0, "  IRQ threshold: {}", wdog.thd(0).1).ok();
-    writeln!(uart0, "  Reset threshold: {}", wdog.thd(0).2).ok();
+    info!("Reset reason: {:?}", reset_info.reason());
+    info!("Watchdog active channel: {}", wdog.channel_id());
+    info!("Watchdog write mode: {:?}", wdog.wr_mode());
+    info!("Watchdog thresholds:");
+    info!("  Clear threshold: {}", wdog.thd(0).0);
+    info!("  IRQ threshold: {}", wdog.thd(0).1);
+    info!("  Reset threshold: {}", wdog.thd(0).2);
 
     loop {
-        writeln!(uart0, "Current time: {} seconds", time.time()).ok();
+        info!("Current time: {} seconds", time.time());
         delay.delay_ms(2000);
     }
 }

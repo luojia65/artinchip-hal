@@ -7,7 +7,7 @@ use artinchip_hal::prelude::*;
 use artinchip_hal::uart::*;
 use artinchip_rt::prelude::*;
 use artinchip_rt::{Peripherals, pbp_entry};
-use embedded_io::Write;
+use log::info;
 use panic_halt as _;
 
 #[repr(C, align(8))]
@@ -26,9 +26,7 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
     let mut pa5 = p.gpioa.pa5.into_pull_up_output();
     let mut delay = p.gtc.new_timer_delay(CntFreq::Freq4M, &mut p.cmu);
 
-    let mut uart0 = p
-        .uart0
-        .new_blocking(tx, rx, UartConfig::default(), &mut p.cmu);
+    let _uart0 = uart_logger_init(p.uart0, tx, rx, UartConfig::default(), &mut p.cmu).unwrap();
 
     let dma_channels = p.dma.split(&mut p.cmu);
 
@@ -71,13 +69,13 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
         v_next: None,
     };
 
-    writeln!(uart0, "=== MEM2MEM DMA Task ===").ok();
-    writeln!(uart0, "Task addr: 0x{:08X}:", task as *const _ as u32).ok();
-    writeln!(uart0, "Task src addr: 0x{:08X}", task.src).ok();
-    writeln!(uart0, "Task dst addr: 0x{:08X}", task.dst).ok();
-    writeln!(uart0, "src addr % 8 = {}", task.src % 8).ok();
-    writeln!(uart0, "dst addr % 8 = {}", task.dst % 8).ok();
-    writeln!(uart0, "task.len = {}", task.len).ok();
+    info!("=== MEM2MEM DMA Task ===");
+    info!("Task addr: 0x{:08X}:", task as *const _ as u32);
+    info!("Task src addr: 0x{:08X}", task.src);
+    info!("Task dst addr: 0x{:08X}", task.dst);
+    info!("src addr % 8 = {}", task.src % 8);
+    info!("dst addr % 8 = {}", task.dst % 8);
+    info!("task.len = {}", task.len);
 
     unsafe {
         // Clean the task descriptor itself as well as the source buffer.
@@ -85,7 +83,7 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
         dcache_clean_invalidate_range(task.src as usize, task.len as usize);
     }
 
-    writeln!(uart0, "Starting DMA transfer...").ok();
+    info!("Starting DMA transfer...");
 
     dma_ch0.start(task);
 
@@ -99,25 +97,25 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
         dcache_invalidate_range(task.dst as usize, task.len as usize);
     }
 
-    writeln!(uart0, "Transfer completed!").ok();
-    writeln!(uart0, "Verify data").ok();
+    info!("Transfer completed!");
+    info!("Verify data");
 
-    writeln!(uart0, "Destination data:").ok();
+    info!("Destination data:");
     let mut test_ok = true;
     for i in 0..2000 {
         let got = unsafe { MEM_DST.0[i] };
         let expect = unsafe { MEM_SRC.0[i] };
         if got != expect {
             test_ok = false;
-            writeln!(uart0, "0x{:08X} (expected: 0x{:08X})", got, expect).ok();
+            info!("0x{:08X} (expected: 0x{:08X})", got, expect);
             continue;
         }
         if i % 200 == 0 {
-            writeln!(uart0, "0x{:08X} (expected: 0x{:08X})", got, expect).ok();
+            info!("0x{:08X} (expected: 0x{:08X})", got, expect);
         }
     }
 
-    writeln!(uart0, "Test {}", if test_ok { "PASSED" } else { "FAILED" }).ok();
+    info!("Test {}", if test_ok { "PASSED" } else { "FAILED" });
 
     loop {
         pa5.toggle();

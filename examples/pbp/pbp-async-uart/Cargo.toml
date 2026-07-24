@@ -10,12 +10,14 @@ embedded-io-async = "0.7.0"
 embassy-futures = "0.1.1"
 critical-section = "1.2.0"
 riscv = { version = "0.16.0", features = ["critical-section-single-hart"] }
-heapless = "0.8"
+heapless = "0.9.3"
 paste = "1.0"
 artinchip-hal = { version = "0.0.0", path = "../../../artinchip-hal" }
 artinchip-rt = { version = "0.0.0", path = "../../../artinchip-rt" }
+log = { version = "0.4", default-features = false }
 
 [features]
-default = ["d13x", "artinchip-rt/interrupts", "artinchip-hal/clic-interrupts"]
+default = ["d13x", "logger", "artinchip-rt/interrupts", "artinchip-hal/clic-interrupts"]
+logger = ["artinchip-hal/uart-logger"]
 d13x = ["artinchip-rt/d13x", "artinchip-hal/d13x"]
 # TODO other features for all the chips.

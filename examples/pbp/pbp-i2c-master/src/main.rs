@@ -7,7 +7,7 @@ use artinchip_hal::prelude::*;
 use artinchip_hal::uart::*;
 use artinchip_rt::prelude::*;
 use artinchip_rt::{Peripherals, pbp_entry};
-use embedded_io::Write;
+use log::{error, info};
 use panic_halt as _;
 
 #[pbp_entry]
@@ -26,19 +26,13 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
 
     let mut delay = p.gtc.new_timer_delay(CntFreq::Freq4M, &mut p.cmu);
 
-    let mut uart0 = p
-        .uart0
-        .new_blocking(tx, rx, UartConfig::default(), &mut p.cmu);
+    let _uart0 = uart_logger_init(p.uart0, tx, rx, UartConfig::default(), &mut p.cmu).unwrap();
 
     let mut i2c2 = p
         .i2c2
         .new_blocking((scl, sda), I2cConfig::default(), &mut p.cmu);
 
-    writeln!(
-        uart0,
-        "Welcome to pbp i2c master example by artinchip-hal🦀!"
-    )
-    .ok();
+    info!("Welcome to pbp i2c master example by artinchip-hal🦀!");
 
     // Ensure rst and int pins are low
     touch_rst.set_low().ok();
@@ -46,36 +40,34 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
     delay.delay_ms(10);
 
     // Initialize GT911 address
-    writeln!(uart0, "Initializing GT911 address... ").ok();
+    info!("Initializing GT911 address... ");
     touch_int.set_high().ok();
     delay.delay_us(110);
     touch_rst.set_high().ok();
     delay.delay_ms(50);
 
-    writeln!(uart0, "GT911 initialized, address is 0x14").ok();
+    info!("GT911 initialized, address is 0x14");
 
     loop {
         if button.is_low().unwrap_or(false) {
             // Wait for button release
             while button.is_low().unwrap_or(false) {}
 
-            writeln!(uart0, "Button pressed!  Reading ID_REG from GT911...").ok();
+            info!("Button pressed!  Reading ID_REG from GT911...");
 
             let mut id_val = [0u8; 4];
             match i2c2.write_read(0x14u8, &[0x81, 0x40], &mut id_val) {
                 Ok(_) => {
                     if let Ok(s) = core::str::from_utf8(&id_val) {
-                        writeln!(uart0, "ID:  {}", s).ok();
+                        info!("ID:  {}", s);
                     }
-                    writeln!(
-                        uart0,
+                    info!(
                         "Bytes:  {:02X} {:02X} {:02X} {:02X}",
                         id_val[0], id_val[1], id_val[2], id_val[3]
-                    )
-                    .ok();
+                    );
                 }
                 Err(_) => {
-                    writeln!(uart0, "Failed to read ID! ").ok();
+                    error!("Failed to read ID! ");
                 }
             }
 

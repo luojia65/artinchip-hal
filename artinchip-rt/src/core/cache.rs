@@ -1,6 +1,7 @@
 //! ArtInChip cache management.
 
 use core::sync::atomic::{Ordering, fence};
+use log::error;
 use xuantie_riscv::asm::{dcache_cipa, dcache_ipa};
 use xuantie_riscv::register::mhcr;
 
@@ -50,6 +51,7 @@ pub const CACHE_LINE: usize = 64;
 #[inline]
 pub unsafe fn dcache_clean_invalidate_range(addr: usize, len: usize) {
     if len == 0 {
+        error!("dcache_clean_invalidate_range called with len=0");
         return;
     }
 
@@ -74,6 +76,7 @@ pub unsafe fn dcache_clean_invalidate_range(addr: usize, len: usize) {
 #[inline]
 pub unsafe fn dcache_invalidate_range(addr: usize, len: usize) {
     if len == 0 {
+        error!("dcache_invalidate_range called with len=0");
         return;
     }
 

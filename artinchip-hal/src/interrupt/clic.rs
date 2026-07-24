@@ -141,6 +141,8 @@ macro_rules! clic_interrupt_mod {
 macro_rules! clic_bind_interrupts {
     ($vis:vis struct $name:ident { $($irq:ident => $handler:ty;)* }) => {
         paste::paste! {
+            use log::error;
+
             // Generate hardware vector entry for each bound interrupt
             $(
                 #[unsafe(no_mangle)]
@@ -156,15 +158,16 @@ macro_rules! clic_bind_interrupts {
             // Default handler (for unbound interrupts)
             #[unsafe(no_mangle)]
             pub extern "riscv-interrupt-m" fn __irq_handler_default() {
+                error!("Default interrupt handler called in CLIC vector table");
                 loop { core::hint::spin_loop(); }
             }
 
             // Global vector table, 64‑byte aligned (required by E907 CLIC mtvt hardware)
             #[repr(C, align(64))]
-            struct ClicVectorTable([u32; 128]);
+            struct ClicVectorTable([u32; 100]);
 
             #[unsafe(link_section = ".clic.vector_table")]
-            static mut VECTOR_TABLE: ClicVectorTable = ClicVectorTable([0; 128]);
+            static mut VECTOR_TABLE: ClicVectorTable = ClicVectorTable([0; 100]);
 
             #[derive(Copy, Clone)]
             $vis struct $name;

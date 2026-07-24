@@ -4,7 +4,7 @@
 use artinchip_hal::prelude::*;
 use artinchip_hal::uart::*;
 use artinchip_rt::{Peripherals, pbp_entry, prelude::*};
-use embedded_io::Write;
+use log::info;
 use panic_halt as _;
 
 #[pbp_entry]
@@ -15,18 +15,12 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
     let rx = p.gpioa.pa1.into_uart0_rx();
     let mut pa5 = p.gpioa.pa5.into_pull_up_input();
 
-    let mut uart0 = p
-        .uart0
-        .new_blocking(tx, rx, UartConfig::default(), &mut p.cmu);
+    let _uart0 = uart_logger_init(p.uart0, tx, rx, UartConfig::default(), &mut p.cmu).unwrap();
 
-    writeln!(
-        uart0,
-        "Welcome to pbp hello world example by artinchip-hal🦀!"
-    )
-    .ok();
+    info!("Welcome to pbp hello world example by artinchip-hal🦀!");
     loop {
         if pa5.is_low().unwrap_or(false) {
-            writeln!(uart0, "Button pressed!").ok();
+            info!("Button pressed!");
             while pa5.is_low().unwrap_or(false) {
                 // wait for button to release
                 core::hint::spin_loop();

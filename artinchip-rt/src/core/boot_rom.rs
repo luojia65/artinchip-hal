@@ -1,6 +1,7 @@
 //! ArtInChip Boot ROM API.
 
 use super::cache::{_disable_cache, dcache_clean_invalidate_range};
+use log::info;
 
 /// Boot reason (bits [11:8] of boot_param).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -106,6 +107,15 @@ impl BootParam {
     pub const fn as_raw(self) -> u32 {
         self.0
     }
+}
+
+/// Print boot information.
+pub fn print_boot_info(boot_param: &BootParam) {
+    info!("Boot param: 0x{:08X}", boot_param.as_raw());
+    info!("Boot device: {:?}", boot_param.boot_device());
+    info!("Boot controller: {:?}", boot_param.boot_controller());
+    info!("Boot reason: {:?}", boot_param.boot_reason());
+    info!("Boot image ID: {}", boot_param.boot_image_id());
 }
 
 /// Check startup.
