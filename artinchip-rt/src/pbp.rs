@@ -21,7 +21,7 @@ pub static PBP_HEADER: PbpHeader = PbpHeader {
 
 #[unsafe(link_section = ".bss.uninit")]
 static mut STACK: [u8; STACK_SIZE] = [0u8; STACK_SIZE];
-const STACK_SIZE: usize = 1024; // 1 KiB
+const STACK_SIZE: usize = 2048; // 2 KiB
 
 const MXSTATUS: u16 = 0x7c0;
 const MEXSTATUS: u16 = 0x7e1;

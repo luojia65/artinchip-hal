@@ -10,11 +10,13 @@ use proc_macro::TokenStream;
 
 /// Pre-Boot Program (PBP) entry.
 ///
-/// In Rust, PBP entry function should follow this convention listed below:
+/// The first parameter must be `BootParam` from `artinchip_rt::core::boot_rom`:
 ///
 /// ```rust
+/// use artinchip_rt::core::boot_rom::BootParam;
+///
 /// #[pbp_entry]
-/// [unsafe] fn pbp_main(boot_param: u32, private_data: &[u8])
+/// fn pbp_main(boot_param: BootParam, private_data: &[u8])
 /// ```
 #[proc_macro_attribute]
 pub fn pbp_entry(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -94,7 +96,7 @@ pub fn pbp_entry(args: TokenStream, input: TokenStream) -> TokenStream {
     if !valid_signature {
         return parse::Error::new(
             f.span(),
-            "`#[pbp_entry]` function must have signature `[unsafe] fn pbp_main(boot_param: u32, private_data: &[u8])`",
+            "`#[pbp_entry]` function must have signature `[unsafe] fn pbp_main(boot_param: BootParam, private_data: &[u8])`",
         )
         .to_compile_error()
         .into();
@@ -118,6 +120,7 @@ pub fn pbp_entry(args: TokenStream, input: TokenStream) -> TokenStream {
         #(#attrs)*
         pub extern "C" fn #ident(boot_param: u32, priv_addr: *const u8, priv_len: u32) #ret {
             let private_data = unsafe { core::slice::from_raw_parts(priv_addr, priv_len as usize) };
+            let boot_param = ::artinchip_rt::core::boot_rom::BootParam::from_raw(boot_param);
             unsafe { __artinchip_rt__pbp_main(boot_param, private_data ) }
         }
         #[allow(non_snake_case)]

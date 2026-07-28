@@ -19,9 +19,12 @@ critical-section = "1.2.0"
 embassy-sync = "0.8.0"
 paste = "1.0"
 xuantie-riscv = {git = "https://github.com/rustsbi/xuantie.git", branch = "main"}
+log = { version = "0.4", default-features = false }
+heapless = { version = "0.9.3", optional = true }
 
 [features]
-clic_interrupts = []
+uart-logger = ["dep:heapless"]
+clic-interrupts = []
 d12x = []
 d13x = []
 d21x = []

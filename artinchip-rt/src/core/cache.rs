@@ -1,6 +1,7 @@
 //! ArtInChip cache management.
 
 use core::sync::atomic::{Ordering, fence};
+use log::error;
 use xuantie_riscv::asm::{dcache_cipa, dcache_ipa};
 use xuantie_riscv::register::mhcr;
 
@@ -16,6 +17,18 @@ pub(crate) extern "C" fn _enable_cache() {
     unsafe {
         mhcr::set_ie();
         mhcr::set_de();
+    }
+}
+
+/// Disable I-Cache and D-Cache.
+///
+/// # Safety
+/// Caller must ensure that no code will be executed from I-cache after this call.
+#[unsafe(no_mangle)]
+pub(crate) extern "C" fn _disable_cache() {
+    unsafe {
+        mhcr::clear_ie();
+        mhcr::clear_de();
     }
 }
 
@@ -38,6 +51,7 @@ pub const CACHE_LINE: usize = 64;
 #[inline]
 pub unsafe fn dcache_clean_invalidate_range(addr: usize, len: usize) {
     if len == 0 {
+        error!("dcache_clean_invalidate_range called with len=0");
         return;
     }
 
@@ -62,6 +76,7 @@ pub unsafe fn dcache_clean_invalidate_range(addr: usize, len: usize) {
 #[inline]
 pub unsafe fn dcache_invalidate_range(addr: usize, len: usize) {
     if len == 0 {
+        error!("dcache_invalidate_range called with len=0");
         return;
     }
 

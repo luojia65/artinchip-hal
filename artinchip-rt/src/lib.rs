@@ -13,6 +13,7 @@ pub mod soc;
 
 /// ArtInChip RT prelude.
 pub mod prelude {
+    pub use crate::core::{boot_rom::*, cache::*};
     pub use crate::gpio::PadExt as _;
 }
 
