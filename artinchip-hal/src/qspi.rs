@@ -2,6 +2,7 @@
 
 mod blocking;
 mod config;
+mod error;
 mod instance;
 mod pad;
 mod qspi_ext;
@@ -9,6 +10,7 @@ mod register;
 
 pub use blocking::*;
 pub use config::*;
+pub use error::*;
 pub use instance::Qspi;
 pub use pad::*;
 pub use qspi_ext::QspiExt;

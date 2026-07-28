@@ -19,8 +19,6 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
     let scl = p.gpioa.pa8.into_i2c2_scl();
     let sda = p.gpioa.pa9.into_i2c2_sda();
 
-    let mut button = p.gpioa.pa5.into_pull_up_input();
-
     let mut touch_rst = p.gpioa.pa10.into_pull_up_output();
     let mut touch_int = p.gpioa.pa11.into_pull_up_output();
 
@@ -46,44 +44,29 @@ fn pbp_main(boot_param: BootParam, _private_data: &[u8]) {
     touch_rst.set_high().ok();
     delay.delay_ms(50);
 
-    info!("GT911 initialized, address is 0x14");
+    info!("Trying to read GT911 ID... ");
 
-    loop {
-        if button.is_low().unwrap_or(false) {
-            // Wait for button release
-            while button.is_low().unwrap_or(false) {}
-
-            info!("Button pressed!  Reading ID_REG from GT911...");
-
-            let mut id_val = [0u8; 4];
-            match i2c2.write_read(0x14u8, &[0x81, 0x40], &mut id_val) {
-                Ok(_) => {
-                    if let Ok(s) = core::str::from_utf8(&id_val) {
-                        info!("ID:  {}", s);
-                    }
-                    info!(
-                        "Bytes:  {:02X} {:02X} {:02X} {:02X}",
-                        id_val[0], id_val[1], id_val[2], id_val[3]
-                    );
+    let mut max_tries = 5;
+    let mut id_val = [0u8; 4];
+    while max_tries > 0 {
+        match i2c2.write_read(0x14u8, &[0x81, 0x40], &mut id_val) {
+            Ok(_) => {
+                if let Ok(s) = core::str::from_utf8(&id_val) {
+                    info!("ID:  {}", s);
                 }
-                Err(_) => {
-                    error!("Failed to read ID! ");
-                }
+                info!(
+                    "Bytes:  {:02X} {:02X} {:02X} {:02X}",
+                    id_val[0], id_val[1], id_val[2], id_val[3]
+                );
+                delay.delay_ms(100);
+                break;
             }
-
-            // Set pa5 to output mode and blink LED 3 times
-            let pa5 = button.free();
-            let mut led = pa5.into_pull_up_output();
-            for _ in 0..3 {
-                led.toggle().ok();
-                delay.delay_ms(50);
-                led.toggle().ok();
-                delay.delay_ms(50);
+            Err(e) => {
+                error!("Failed to read GT911 ID! ({:?})", e);
+                max_tries -= 1;
             }
-
-            // Set pa5 back to input mode
-            let pa5 = led.free();
-            button = pa5.into_pull_up_input();
         }
     }
+
+    loop {}
 }

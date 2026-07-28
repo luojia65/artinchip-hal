@@ -2,6 +2,7 @@
 
 mod blocking;
 mod config;
+mod error;
 mod instance;
 #[cfg(feature = "uart-logger")]
 mod logger;
@@ -13,6 +14,7 @@ mod uart_ext;
 
 pub use blocking::*;
 pub use config::*;
+pub use error::*;
 pub use instance::Uart;
 #[cfg(feature = "uart-logger")]
 pub use logger::*;

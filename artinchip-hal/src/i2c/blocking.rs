@@ -3,6 +3,7 @@
 use embedded_hal::i2c::{Operation, SevenBitAddress, TenBitAddress};
 
 use super::config::{I2cConfig, Role};
+use super::error::I2cError;
 use super::instance::I2c;
 use super::pad::I2cPads;
 use super::register::{AddressMode, RegisterBlock, SpeedMode, TransferMode};
@@ -168,7 +169,7 @@ impl<'a, const I: u8, PAD> embedded_hal::i2c::ErrorType for BlockingI2c<'a, I, P
 where
     PAD: I2cPads<I>,
 {
-    type Error = core::convert::Infallible;
+    type Error = I2cError;
 }
 
 impl<'a, const I: u8, PAD> embedded_hal::i2c::I2c<SevenBitAddress> for BlockingI2c<'a, I, PAD>
@@ -230,7 +231,12 @@ where
 
                     // Read data from RX FIFO
                     for byte in buffer.iter_mut() {
+                        let mut timeout = 100_000;
                         while self.reg.rx_flr.read().rx_fifo_count() == 0 {
+                            timeout -= 1;
+                            if timeout == 0 {
+                                return Err(I2cError::Timeout);
+                            }
                             core::hint::spin_loop();
                         }
                         *byte = self.reg.data_cmd.read().data_byte();
@@ -302,7 +308,12 @@ where
 
                     // Read data from RX FIFO
                     for byte in buffer.iter_mut() {
+                        let mut timeout = 100_000;
                         while self.reg.rx_flr.read().rx_fifo_count() == 0 {
+                            timeout -= 1;
+                            if timeout == 0 {
+                                return Err(I2cError::Timeout);
+                            }
                             core::hint::spin_loop();
                         }
                         *byte = self.reg.data_cmd.read().data_byte();

@@ -5,6 +5,7 @@
 // - https://aicdoc.artinchip.com/topics/ic/qspi/qspi-programming-guide-d13x.html
 
 use super::config::*;
+use super::error::QspiError;
 use super::instance::Qspi;
 use super::pad::*;
 use super::register::*;
@@ -245,19 +246,29 @@ where
     }
 
     /// Wait for the transfer to complete.
-    fn wait_transfer_done(&mut self) {
+    fn wait_transfer_done(&mut self) -> Result<(), QspiError> {
+        let mut timeout = 100_000;
         while self.reg.trans_config.read().start() {
+            timeout -= 1;
+            if timeout == 0 {
+                return Err(QspiError::Timeout);
+            }
             core::hint::spin_loop();
         }
+        Ok(())
     }
 
     /// Write bytes to the TX FIFO.
-    fn write_bytes(&mut self, buf: &[u8]) {
+    fn write_bytes(&mut self, buf: &[u8]) -> Result<(), QspiError> {
         let mut idx = 0usize;
 
         while idx < buf.len() {
-            // Wait for FIFO to have enough space (at least one u32).
+            let mut timeout = 100_000;
             while self.reg.fifo_status.read().tx_fifo_count() >= Self::FIFO_DEPTH - 4 {
+                timeout -= 1;
+                if timeout == 0 {
+                    return Err(QspiError::Timeout);
+                }
                 core::hint::spin_loop();
             }
 
@@ -274,12 +285,13 @@ where
 
             idx += chunk;
         }
+        Ok(())
     }
 
     /// Read bytes from the RX FIFO.
-    fn read_bytes(&self, buf: &mut [u8]) {
+    fn read_bytes(&self, buf: &mut [u8]) -> Result<(), QspiError> {
         if buf.is_empty() {
-            return;
+            return Ok(());
         }
 
         let mut idx = 0usize;
@@ -288,8 +300,12 @@ where
             // Calculate the number of bytes to read this time (maximum 4 bytes).
             let chunk = core::cmp::min(4, buf.len() - idx);
 
-            // Wait for at least chunk bytes in FIFO.
+            let mut timeout = 100_000;
             while (self.reg.fifo_status.read().rx_fifo_count() as usize) < chunk {
+                timeout -= 1;
+                if timeout == 0 {
+                    return Err(QspiError::Timeout);
+                }
                 core::hint::spin_loop();
             }
 
@@ -301,6 +317,7 @@ where
 
             idx += chunk;
         }
+        Ok(())
     }
 
     /// Calculate the best internal clock divider to achieve target frequency.
@@ -399,7 +416,7 @@ impl<'a, const I: u8, PAD> embedded_hal::spi::ErrorType for BlockingQspi<'a, I, 
 where
     PAD: QspiPads<I>,
 {
-    type Error = core::convert::Infallible;
+    type Error = QspiError;
 }
 
 impl<'a, const I: u8, PAD> embedded_hal::spi::SpiBus for BlockingQspi<'a, I, PAD>
@@ -412,9 +429,8 @@ where
         }
         self.reset_fifos();
         self.start_transfer(words.len(), 0);
-        self.read_bytes(words);
-        self.wait_transfer_done();
-        Ok(())
+        self.read_bytes(words)?;
+        self.wait_transfer_done()
     }
 
     fn write(&mut self, words: &[u8]) -> Result<(), Self::Error> {
@@ -423,12 +439,16 @@ where
         }
         self.reset_fifos();
         self.start_transfer(words.len(), words.len());
-        self.write_bytes(words);
+        self.write_bytes(words)?;
+        let mut timeout = 100_000;
         while self.reg.fifo_status.read().tx_fifo_count() != 0 {
+            timeout -= 1;
+            if timeout == 0 {
+                return Err(QspiError::Timeout);
+            }
             core::hint::spin_loop();
         }
-        self.wait_transfer_done();
-        Ok(())
+        self.wait_transfer_done()
     }
 
     fn transfer(&mut self, read: &mut [u8], write: &[u8]) -> Result<(), Self::Error> {
@@ -452,8 +472,7 @@ where
     }
 
     fn flush(&mut self) -> Result<(), Self::Error> {
-        self.wait_transfer_done();
-        Ok(())
+        self.wait_transfer_done()
     }
 }
 
@@ -470,13 +489,17 @@ where
                     }
                     self.reset_fifos();
                     self.start_transfer(buf.len(), buf.len());
-                    self.write_bytes(buf);
+                    self.write_bytes(buf)?;
 
-                    // Wait for TX FIFO to empty.
+                    let mut timeout = 100_000;
                     while self.reg.fifo_status.read().tx_fifo_count() != 0 {
+                        timeout -= 1;
+                        if timeout == 0 {
+                            return Err(QspiError::Timeout);
+                        }
                         core::hint::spin_loop();
                     }
-                    self.wait_transfer_done();
+                    self.wait_transfer_done()?;
                 }
                 Operation::Read(buf) => {
                     if buf.is_empty() {
@@ -498,10 +521,14 @@ where
                     // Send dummy bytes (0xFF) to generate SCK clock.
                     let mut idx = 0;
                     while idx < buf.len() {
-                        // Wait for FIFO to have space.
+                        let mut timeout = 100_000;
                         while self.reg.fifo_status.read().tx_fifo_count()
                             >= Self::DEFAULT_TX_WATERMARK
                         {
+                            timeout -= 1;
+                            if timeout == 0 {
+                                return Err(QspiError::Timeout);
+                            }
                             core::hint::spin_loop();
                         }
 
@@ -512,15 +539,18 @@ where
                         idx += chunk;
                     }
 
-                    // Wait for dummy data to finish sending.
+                    let mut timeout = 100_000;
                     while self.reg.fifo_status.read().tx_fifo_count() != 0 {
+                        timeout -= 1;
+                        if timeout == 0 {
+                            return Err(QspiError::Timeout);
+                        }
                         core::hint::spin_loop();
                     }
 
-                    // Read data from RX FIFO.
-                    self.read_bytes(buf);
+                    self.read_bytes(buf)?;
 
-                    self.wait_transfer_done();
+                    self.wait_transfer_done()?;
 
                     // Restore settings.
                     unsafe {

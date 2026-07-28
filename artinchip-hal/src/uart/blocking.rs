@@ -1,6 +1,7 @@
 //! Blocking serial communication interface.
 
 use super::config::{StopBits, UartConfig};
+use super::error::UartError;
 use super::instance::Uart;
 use super::pad::{Receive, Transmit, UartPad};
 use super::register::RegisterBlock;
@@ -103,12 +104,16 @@ where
     }
 
     /// Blocking write buffer.
-    pub fn blocking_write(&mut self, buf: &[u8]) -> Result<usize, ()> {
+    pub fn blocking_write(&mut self, buf: &[u8]) -> Result<usize, UartError> {
         let uart16550 = &self.reg.uart16550;
 
         for &b in buf {
-            // Wait until the transmitter FIFO is not full
+            let mut timeout = 100_000;
             while !uart16550.lsr().read().is_transmitter_fifo_empty() {
+                timeout -= 1;
+                if timeout == 0 {
+                    return Err(UartError::Timeout);
+                }
                 core::hint::spin_loop();
             }
             uart16550.rbr_thr().tx_data(b);
@@ -117,7 +122,7 @@ where
     }
 
     /// Blocking read buffer.
-    pub fn blocking_read(&mut self, buf: &mut [u8]) -> Result<usize, ()> {
+    pub fn blocking_read(&mut self, buf: &mut [u8]) -> Result<usize, UartError> {
         // TODO: implement reading into buffer
         buf.fill(0);
         Ok(0)
@@ -175,12 +180,16 @@ where
     TX: UartPad<I> + Transmit<I>,
 {
     /// Blocking write buffer.
-    pub fn blocking_write(&mut self, buf: &[u8]) -> Result<usize, ()> {
+    pub fn blocking_write(&mut self, buf: &[u8]) -> Result<usize, UartError> {
         let uart16550 = &self.reg.uart16550;
 
         for &b in buf {
-            // Wait until the transmitter FIFO is not full
+            let mut timeout = 100_000;
             while !uart16550.lsr().read().is_transmitter_fifo_empty() {
+                timeout -= 1;
+                if timeout == 0 {
+                    return Err(UartError::Timeout);
+                }
                 core::hint::spin_loop();
             }
             uart16550.rbr_thr().tx_data(b);
@@ -203,7 +212,7 @@ where
     RX: UartPad<I> + Receive<I>,
 {
     /// Blocking read buffer.
-    pub fn blocking_read(&mut self, buf: &mut [u8]) -> Result<usize, ()> {
+    pub fn blocking_read(&mut self, buf: &mut [u8]) -> Result<usize, UartError> {
         // TODO: implement reading into buffer
         buf.fill(0);
         Ok(0)
@@ -215,21 +224,21 @@ where
     TX: UartPad<I> + Transmit<I>,
     RX: UartPad<I> + Receive<I>,
 {
-    type Error = core::convert::Infallible;
+    type Error = UartError;
 }
 
 impl<'a, const I: u8, TX> embedded_io::ErrorType for TransmitHalf<'a, I, TX>
 where
     TX: UartPad<I> + Transmit<I>,
 {
-    type Error = core::convert::Infallible;
+    type Error = UartError;
 }
 
 impl<'a, const I: u8, RX> embedded_io::ErrorType for ReceiveHalf<'a, I, RX>
 where
     RX: UartPad<I> + Receive<I>,
 {
-    type Error = core::convert::Infallible;
+    type Error = UartError;
 }
 
 impl<'a, const I: u8, TX, RX> embedded_io::Write for BlockingSerial<'a, I, TX, RX>
@@ -239,12 +248,16 @@ where
 {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
-        self.blocking_write(buf).ok();
-        Ok(buf.len())
+        self.blocking_write(buf)
     }
     #[inline]
     fn flush(&mut self) -> Result<(), Self::Error> {
+        let mut timeout = 100_000;
         while !self.reg.usr.read().is_transmit_fifo_empty() {
+            timeout -= 1;
+            if timeout == 0 {
+                return Err(UartError::Timeout);
+            }
             core::hint::spin_loop();
         }
         Ok(())
@@ -257,12 +270,16 @@ where
 {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
-        self.blocking_write(buf).ok();
-        Ok(buf.len())
+        self.blocking_write(buf)
     }
     #[inline]
     fn flush(&mut self) -> Result<(), Self::Error> {
+        let mut timeout = 100_000;
         while !self.reg.usr.read().is_transmit_fifo_empty() {
+            timeout -= 1;
+            if timeout == 0 {
+                return Err(UartError::Timeout);
+            }
             core::hint::spin_loop();
         }
         Ok(())
@@ -276,8 +293,7 @@ where
 {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-        self.blocking_read(buf).ok();
-        Ok(buf.len())
+        self.blocking_read(buf)
     }
 }
 
@@ -287,7 +303,6 @@ where
 {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-        self.blocking_read(buf).ok();
-        Ok(buf.len())
+        self.blocking_read(buf)
     }
 }
