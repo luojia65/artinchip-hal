@@ -109,7 +109,7 @@ pub fn pbp_entry(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let attrs = f.attrs;
-    let unsafety = f.sig.unsafety;
+    let safety = f.sig.safety;
     let args = f.sig.inputs;
     let stmts = f.block.stmts;
     let ret = f.sig.output;
@@ -126,7 +126,7 @@ pub fn pbp_entry(args: TokenStream, input: TokenStream) -> TokenStream {
         #[allow(non_snake_case)]
         #[inline]
         #(#attrs)*
-        #unsafety fn __artinchip_rt__pbp_main(#args) #ret {
+        #safety fn __artinchip_rt__pbp_main(#args) #ret {
             #(#stmts)*
         }
     )

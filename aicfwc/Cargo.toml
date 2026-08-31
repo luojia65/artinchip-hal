@@ -11,4 +11,4 @@ authors = [
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
-md-5 = "0.10.6"
+md-5 = "0.11.0"
